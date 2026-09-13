@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gate Log — إمداد الطرق للمقاولات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --asphalt:#1F2226;
+    --asphalt-2:#2A2E33;
+    --concrete:#ECE9E4;
+    --paper:#FFFFFF;
+    --amber:#E8A628;
+    --amber-dark:#B9821A;
+    --steel:#46606B;
+    --steel-light:#E7EEF0;
+    --rust:#B54A34;
+    --rust-light:#F6E7E2;
+    --ink:#23262A;
+    --ink-soft:#6B7178;
+    --line:#D8D3CB;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--concrete);color:var(--ink);font-family:'Space Grotesk',sans-serif;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  /* Top bar */
+  header{background:var(--asphalt);color:#fff;padding:18px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+  .brand{display:flex;flex-direction:column;gap:2px;}
+  .brand .app-name{font-weight:700;font-size:20px;letter-spacing:0.2px;}
+  .brand .company-name{font-size:13px;color:#B9BEC4;direction:rtl;}
+  .header-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  select.site-switch{background:var(--asphalt-2);color:#fff;border:1px solid #3B4046;border-radius:6px;padding:9px 12px;font-family:'Space Grotesk',sans-serif;font-size:14px;}
+  button{cursor:pointer;font-family:'Space Grotesk',sans-serif;}
+  .btn-primary{background:var(--amber);color:var(--asphalt);border:none;padding:10px 18px;border-radius:6px;font-weight:600;font-size:14px;}
+  .btn-primary:hover{background:var(--amber-dark);}
+  .barrier-stripe{height:6px;background:repeating-linear-gradient(135deg,var(--amber) 0 14px,var(--asphalt) 14px 28px);}
+
+  main{max-width:1180px;margin:0 auto;padding:28px;}
+
+  /* Stats */
+  .stats{display:flex;background:var(--paper);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:22px;}
+  .stat{flex:1;padding:18px 22px;border-right:1px solid var(--line);}
+  .stat:last-child{border-right:none;}
+  .stat .num{font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;color:var(--asphalt);}
+  .stat .lbl{font-size:13px;color:var(--ink-soft);margin-top:4px;}
+
+  /* Filters */
+  .filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+  .filters input, .filters select{padding:9px 12px;border:1px solid var(--line);border-radius:6px;font-family:'Space Grotesk',sans-serif;font-size:14px;background:var(--paper);color:var(--ink);}
+  .filters input[type="text"]{min-width:180px;}
+  .filters .spacer{flex:1;}
+  .btn-secondary{background:var(--paper);border:1px solid var(--line);padding:9px 14px;border-radius:6px;font-size:14px;color:var(--ink);}
+  .btn-secondary:hover{border-color:var(--asphalt);}
+
+  /* Table */
+  table{width:100%;border-collapse:collapse;background:var(--paper);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+  thead th{text-align:left;font-size:12px;color:var(--ink-soft);font-weight:600;padding:12px 14px;border-bottom:1px solid var(--line);background:#F7F5F1;}
+  tbody td{padding:10px 14px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  .plate-cell{font-family:'IBM Plex Mono',monospace;font-weight:600;letter-spacing:1px;}
+  .thumb{width:46px;height:34px;object-fit:cover;border-radius:4px;border:1px solid var(--line);display:block;}
+  .no-photo{width:46px;height:34px;border-radius:4px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:10px;}
+  .dir-badge{font-size:12px;font-weight:600;padding:4px 9px;border-radius:20px;display:inline-block;}
+  .dir-in{background:var(--steel-light);color:var(--steel);}
+  .dir-out{background:var(--rust-light);color:var(--rust);}
+  .del-btn{background:none;border:none;color:var(--ink-soft);font-size:13px;}
+  .del-btn:hover{color:var(--rust);}
+  .empty-row td{text-align:center;padding:40px;color:var(--ink-soft);}
+
+  /* Slide-over panel */
+  .scrim{position:fixed;inset:0;background:rgba(31,34,38,0.55);opacity:0;pointer-events:none;transition:opacity 0.25s ease;z-index:10;}
+  .scrim.open{opacity:1;pointer-events:auto;}
+  .panel{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:92vw;background:var(--paper);box-shadow:-6px 0 24px rgba(0,0,0,0.15);transform:translateX(100%);transition:transform 0.28s ease;z-index:11;overflow-y:auto;}
+  .panel.open{transform:translateX(0);}
+  .panel-head{padding:22px 24px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
+  .panel-head h2{font-size:18px;margin:0;}
+  .panel-close{background:none;border:none;font-size:20px;color:var(--ink-soft);}
+  .panel-body{padding:22px 24px;display:flex;flex-direction:column;gap:16px;}
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--ink);}
+  .field input, .field select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:6px;font-family:'Space Grotesk',sans-serif;font-size:14px;}
+  .field input.plate-input{font-family:'IBM Plex Mono',monospace;font-weight:600;letter-spacing:2px;text-transform:uppercase;}
+
+  .dir-toggle{display:flex;gap:8px;}
+  .dir-toggle button{flex:1;padding:12px;border-radius:6px;border:1px solid var(--line);background:var(--paper);font-weight:600;font-size:14px;color:var(--ink-soft);}
+  .dir-toggle button.active-in{background:var(--steel);border-color:var(--steel);color:#fff;}
+  .dir-toggle button.active-out{background:var(--rust);border-color:var(--rust);color:#fff;}
+
+  .dropzone{border:1.5px dashed var(--line);border-radius:8px;padding:20px;text-align:center;color:var(--ink-soft);font-size:13px;cursor:pointer;position:relative;}
+  .dropzone.has-photo{padding:0;border-style:solid;}
+  .dropzone img{width:100%;max-height:180px;object-fit:cover;border-radius:8px;display:block;}
+  .dropzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+  .remove-photo{margin-top:8px;font-size:12px;color:var(--rust);background:none;border:none;}
+
+  .panel-footer{padding:18px 24px;border-top:1px solid var(--line);}
+  .save-btn{width:100%;background:var(--amber);color:var(--asphalt);border:none;padding:13px;border-radius:6px;font-weight:700;font-size:15px;}
+  .save-btn:hover{background:var(--amber-dark);}
+
+  .manage-sites{font-size:12px;color:var(--ink-soft);text-decoration:underline;cursor:pointer;background:none;border:none;padding:0;}
+  .site-manager{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
+  .site-row{display:flex;gap:8px;align-items:center;}
+  .site-row .site-name-input{flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-family:'Space Grotesk',sans-serif;font-size:14px;}
+  .site-row .site-name-input:focus{border-color:var(--amber-dark);outline:none;}
+  .site-row button{background:none;border:none;color:var(--ink-soft);font-size:13px;}
+  .site-row button:hover{color:var(--rust);}
+  .add-site-row{display:flex;gap:8px;}
+  .add-site-row input{flex:1;}
+
+  .storage-note{font-size:12px;color:var(--ink-soft);margin:-8px 0 18px;padding:8px 12px;background:#F7F5F1;border-radius:6px;}
+
+  .btn-ghost{background:transparent;color:#fff;border:1px solid #454B52;padding:9px 16px;border-radius:6px;font-size:14px;}
+  .btn-ghost:hover{border-color:var(--amber);}
+
+  .camera-note{font-size:12.5px;line-height:1.5;color:var(--ink-soft);background:#F7F5F1;border-radius:6px;padding:12px 14px;}
+  .camera-list{display:flex;flex-direction:column;gap:14px;}
+  .camera-card{border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:10px;}
+  .camera-card-head{display:flex;justify-content:space-between;align-items:center;}
+  .camera-card-head .cam-name{font-weight:600;font-size:14px;}
+  .cam-status{font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;}
+  .cam-status.idle{background:#EDEBE7;color:var(--ink-soft);}
+  .cam-status.ok{background:var(--steel-light);color:var(--steel);}
+  .cam-status.err{background:var(--rust-light);color:var(--rust);}
+  .camera-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .camera-grid input, .camera-grid select{padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px;font-family:'Space Grotesk',sans-serif;}
+  .camera-grid .full{grid-column:1 / -1;}
+  .camera-actions{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .camera-actions .left{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-soft);}
+  .cam-last{font-size:12px;color:var(--ink-soft);}
+  .cam-last .mono{color:var(--ink);}
+  .add-camera-btn{width:100%;background:var(--paper);border:1.5px dashed var(--line);border-radius:8px;padding:12px;color:var(--ink-soft);font-size:14px;}
+  .add-camera-btn:hover{border-color:var(--amber-dark);color:var(--ink);}
+  .auto-badge{font-size:10px;font-weight:600;color:var(--steel);border:1px solid var(--steel);border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle;}
+
+  @media(max-width:640px){
+    .stats{flex-direction:column;}
+    .stat{border-right:none;border-bottom:1px solid var(--line);}
+    .stat:last-child{border-bottom:none;}
+    table thead{display:none;}
+    table, tbody, tr, td{display:block;width:100%;}
+    tbody tr{border-bottom:1px solid var(--line);padding:10px 0;}
+    tbody td{border:none;padding:4px 14px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="app-name">Gate Log</span>
+    <span class="company-name">إمداد الطرق للمقاولات</span>
+  </div>
+  <div class="header-right">
+    <select class="site-switch" id="siteSwitch"></select>
+    <button class="btn-ghost" id="openSitesBtn">Manage sites</button>
+    <button class="btn-ghost" id="openCamerasBtn">Cameras</button>
+    <button class="btn-primary" id="openPanelBtn">+ New entry</button>
+  </div>
+</header>
+<div class="barrier-stripe"></div>
+
+<main>
+  <div class="storage-note" id="storageNote" style="display:none;"></div>
+
+  <div class="stats">
+    <div class="stat"><div class="num mono" id="statToday">0</div><div class="lbl">Vehicles today</div></div>
+    <div class="stat"><div class="num mono" id="statInside">0</div><div class="lbl">Currently inside</div></div>
+    <div class="stat"><div class="num mono" id="statWeek">0</div><div class="lbl">This week</div></div>
+    <div class="stat"><div class="num mono" id="statMonth">0</div><div class="lbl">This month</div></div>
+  </div>
+
+  <div class="filters">
+    <input type="text" id="searchPlate" placeholder="Search plate number">
+    <select id="filterSite"><option value="">All sites</option></select>
+    <select id="filterType">
+      <option value="">All types</option>
+      <option value="Truck">Truck</option>
+      <option value="Car">Car</option>
+      <option value="Equipment">Equipment</option>
+      <option value="Bus">Bus</option>
+      <option value="Other">Other</option>
+    </select>
+    <input type="date" id="filterFrom">
+    <input type="date" id="filterTo">
+    <div class="spacer"></div>
+    <button class="btn-secondary" id="exportBtn">Export CSV</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Photo</th><th>Plate</th><th>Type</th><th>Direction</th><th>Site</th><th>Driver / company</th><th>Time</th><th></th>
+      </tr>
+    </thead>
+    <tbody id="logBody"></tbody>
+  </table>
+</main>
+
+<!-- Slide-over panel -->
+<div class="scrim" id="scrim"></div>
+<div class="panel" id="panel">
+  <div class="panel-head">
+    <h2>New gate entry</h2>
+    <button class="panel-close" id="closePanelBtn">✕</button>
+  </div>
+  <div class="panel-body">
+
+    <div class="field">
+      <label>Plate number</label>
+      <input type="text" class="plate-input" id="fPlate" placeholder="ABC 1234">
+    </div>
+
+    <div class="field">
+      <label>Direction</label>
+      <div class="dir-toggle">
+        <button type="button" id="dirInBtn">Entering</button>
+        <button type="button" id="dirOutBtn">Leaving</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Vehicle type</label>
+      <select id="fType">
+        <option>Truck</option>
+        <option>Car</option>
+        <option>Equipment</option>
+        <option>Bus</option>
+        <option>Other</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Site / gate</label>
+      <select id="fSite"></select>
+      <button type="button" class="manage-sites" id="manageSitesBtn" style="margin-top:8px;">Manage sites</button>
+      <div class="site-manager" id="siteManager" style="display:none;"></div>
+    </div>
+
+    <div class="field">
+      <label>Driver / company (optional)</label>
+      <input type="text" id="fDriver" placeholder="Name or company">
+    </div>
+
+    <div class="field">
+      <label>Photo (optional)</label>
+      <div class="dropzone" id="dropzone">
+        <span id="dropzoneText">Click or drop a photo of the vehicle / plate</span>
+        <input type="file" accept="image/*" id="fPhoto">
+      </div>
+      <button type="button" class="remove-photo" id="removePhotoBtn" style="display:none;">Remove photo</button>
+    </div>
+
+  </div>
+  <div class="panel-footer">
+    <button class="save-btn" id="saveBtn">Save entry</button>
+  </div>
+</div>
+
+<!-- Cameras panel -->
+<div class="scrim" id="cameraScrim"></div>
+<div class="panel" id="cameraPanel">
+  <div class="panel-head">
+    <h2>Cameras</h2>
+    <button class="panel-close" id="closeCameraPanelBtn">✕</button>
+  </div>
+  <div class="panel-body">
+    <div class="camera-note">
+      Each camera connects by calling its local IP address directly from this page and reading the plate out of its response. This only works if the camera exposes an HTTP JSON endpoint on your network, allows cross-origin requests, and this page is opened over plain HTTP (not HTTPS) on the same network — browser security blocks it otherwise. If a camera won't connect, you can still log its plates manually in "New entry".
+    </div>
+    <div class="camera-list" id="cameraList"></div>
+    <button type="button" class="add-camera-btn" id="addCameraBtn">+ Add another camera</button>
+  </div>
+</div>
+
+<script>
+const hasStorage = typeof window.storage !== 'undefined';
+let memoryStore = {};
+
+async function stGet(key, shared){
+  if(!hasStorage){ return memoryStore[key] ?? null; }
+  try{ const r = await window.storage.get(key, shared); return r ? r.value : null; }
+  catch(e){ return null; }
+}
+async function stSet(key, value, shared){
+  if(!hasStorage){ memoryStore[key] = value; return true; }
+  try{ const r = await window.storage.set(key, value, shared); return !!r; }
+  catch(e){ console.error('storage set failed', e); return false; }
+}
+
+const ENTRIES_KEY = 'gate-log-entries';
+const SITES_KEY = 'gate-log-sites';
+const CAMERAS_KEY = 'gate-log-cameras';
+const DEFAULT_SITES = ['Main Gate', 'Site B — North Gate'];
+
+let entries = [];
+let sites = [];
+let cameras = [];
+let currentDirection = 'in';
+let currentPhoto = null;
+const pollTimers = {};
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+async function loadData(){
+  const rawEntries = await stGet(ENTRIES_KEY, true);
+  entries = rawEntries ? JSON.parse(rawEntries) : [];
+
+  const rawSites = await stGet(SITES_KEY, true);
+  sites = rawSites ? JSON.parse(rawSites) : DEFAULT_SITES.slice();
+  if(!rawSites){ await stSet(SITES_KEY, JSON.stringify(sites), true); }
+
+  const rawCameras = await stGet(CAMERAS_KEY, true);
+  cameras = rawCameras ? JSON.parse(rawCameras) : [];
+  cameras.forEach(cam => { if(!cam.mode) cam.mode = cam.polling ? 'auto' : 'manual'; });
+
+  if(!hasStorage){
+    const note = document.getElementById('storageNote');
+    note.style.display = 'block';
+    note.textContent = 'Preview mode: this file isn\'t connected to persistent storage right now, so entries will reset on reload.';
+  }
+}
+
+async function saveEntries(){ await stSet(ENTRIES_KEY, JSON.stringify(entries), true); }
+async function saveSites(){ await stSet(SITES_KEY, JSON.stringify(sites), true); }
+async function saveCameras(){ await stSet(CAMERAS_KEY, JSON.stringify(cameras), true); }
+
+function populateSiteSelects(){
+  const switcher = document.getElementById('siteSwitch');
+  const filterSite = document.getElementById('filterSite');
+  const fSite = document.getElementById('fSite');
+  const currentSwitchVal = switcher.value;
+
+  switcher.innerHTML = '<option value="">All sites</option>' + sites.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  filterSite.innerHTML = '<option value="">All sites</option>' + sites.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  fSite.innerHTML = sites.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+
+  if(sites.includes(currentSwitchVal)) switcher.value = currentSwitchVal;
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function isSameDay(d1, d2){
+  return d1.getFullYear()===d2.getFullYear() && d1.getMonth()===d2.getMonth() && d1.getDate()===d2.getDate();
+}
+
+function renderStats(){
+  const now = new Date();
+  const todayCount = entries.filter(e => isSameDay(new Date(e.timestamp), now)).length;
+
+  const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay()); weekStart.setHours(0,0,0,0);
+  const weekCount = entries.filter(e => new Date(e.timestamp) >= weekStart).length;
+
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthCount = entries.filter(e => new Date(e.timestamp) >= monthStart).length;
+
+  const latestByPlate = {};
+  entries.slice().sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp)).forEach(e=>{ latestByPlate[e.plate] = e; });
+  const insideCount = Object.values(latestByPlate).filter(e => e.direction === 'in').length;
+
+  document.getElementById('statToday').textContent = todayCount;
+  document.getElementById('statInside').textContent = insideCount;
+  document.getElementById('statWeek').textContent = weekCount;
+  document.getElementById('statMonth').textContent = monthCount;
+}
+
+function getFilteredEntries(){
+  const search = document.getElementById('searchPlate').value.trim().toUpperCase();
+  const site = document.getElementById('filterSite').value;
+  const type = document.getElementById('filterType').value;
+  const from = document.getElementById('filterFrom').value;
+  const to = document.getElementById('filterTo').value;
+
+  return entries.filter(e => {
+    if(search && !e.plate.toUpperCase().includes(search)) return false;
+    if(site && e.site !== site) return false;
+    if(type && e.type !== type) return false;
+    if(from && new Date(e.timestamp) < new Date(from + 'T00:00:00')) return false;
+    if(to && new Date(e.timestamp) > new Date(to + 'T23:59:59')) return false;
+    return true;
+  }).sort((a,b)=> new Date(b.timestamp) - new Date(a.timestamp));
+}
+
+function renderTable(){
+  const body = document.getElementById('logBody');
+  const rows = getFilteredEntries();
+
+  if(rows.length === 0){
+    body.innerHTML = `<tr class="empty-row"><td colspan="8">No entries match — log the first vehicle to get started.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = rows.map(e => {
+    const dt = new Date(e.timestamp);
+    const timeStr = dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    const photoCell = e.photo
+      ? `<img class="thumb" src="${e.photo}" alt="Vehicle photo">`
+      : `<div class="no-photo">—</div>`;
+    const dirBadge = e.direction === 'in'
+      ? `<span class="dir-badge dir-in">Entering</span>`
+      : `<span class="dir-badge dir-out">Leaving</span>`;
+
+    const autoBadge = e.source ? `<span class="auto-badge" title="${escapeHtml(e.source)}">Auto</span>` : '';
+
+    return `<tr>
+      <td>${photoCell}</td>
+      <td class="plate-cell">${escapeHtml(e.plate)}${autoBadge}</td>
+      <td>${escapeHtml(e.type)}</td>
+      <td>${dirBadge}</td>
+      <td>${escapeHtml(e.site)}</td>
+      <td>${escapeHtml(e.driver || '—')}</td>
+      <td class="mono" style="font-size:13px;">${timeStr}</td>
+      <td><button class="del-btn" data-id="${e.id}">Delete</button></td>
+    </tr>`;
+  }).join('');
+
+  body.querySelectorAll('.del-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      entries = entries.filter(e => e.id !== btn.dataset.id);
+      await saveEntries();
+      renderAll();
+    });
+  });
+}
+
+function renderAll(){
+  renderStats();
+  renderTable();
+}
+
+/* Panel open/close */
+function openPanel(){
+  document.getElementById('panel').classList.add('open');
+  document.getElementById('scrim').classList.add('open');
+}
+function closePanel(){
+  document.getElementById('panel').classList.remove('open');
+  document.getElementById('scrim').classList.remove('open');
+  resetForm();
+}
+function resetForm(){
+  document.getElementById('fPlate').value = '';
+  document.getElementById('fDriver').value = '';
+  document.getElementById('fType').selectedIndex = 0;
+  currentPhoto = null;
+  currentDirection = 'in';
+  updateDirButtons();
+  document.getElementById('dropzoneText').style.display = 'block';
+  document.getElementById('dropzone').classList.remove('has-photo');
+  const existingImg = document.querySelector('#dropzone img');
+  if(existingImg) existingImg.remove();
+  document.getElementById('removePhotoBtn').style.display = 'none';
+  document.getElementById('siteManager').style.display = 'none';
+}
+function updateDirButtons(){
+  const inBtn = document.getElementById('dirInBtn');
+  const outBtn = document.getElementById('dirOutBtn');
+  inBtn.classList.toggle('active-in', currentDirection === 'in');
+  outBtn.classList.toggle('active-out', currentDirection === 'out');
+}
+
+/* Photo handling with compression */
+function handlePhotoFile(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const maxW = 800;
+      const scale = Math.min(1, maxW / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      currentPhoto = canvas.toDataURL('image/jpeg', 0.7);
+
+      const dz = document.getElementById('dropzone');
+      document.getElementById('dropzoneText').style.display = 'none';
+      dz.classList.add('has-photo');
+      let imgEl = dz.querySelector('img');
+      if(!imgEl){ imgEl = document.createElement('img'); dz.insertBefore(imgEl, dz.firstChild); }
+      imgEl.src = currentPhoto;
+      document.getElementById('removePhotoBtn').style.display = 'inline-block';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+/* Site manager */
+function renderSiteManager(){
+  const el = document.getElementById('siteManager');
+  el.innerHTML = sites.map((s, i) => `
+    <div class="site-row">
+      <input type="text" class="site-name-input" data-i="${i}" value="${escapeHtml(s)}">
+      <button type="button" data-i="${i}" class="remove-site-btn">Remove</button>
+    </div>`).join('') + `
+    <div class="add-site-row">
+      <input type="text" id="newSiteInput" placeholder="New site or gate name">
+      <button type="button" class="btn-secondary" id="addSiteBtn">Add</button>
+    </div>`;
+
+  el.querySelectorAll('.site-name-input').forEach(input => {
+    input.addEventListener('change', async () => {
+      await renameSite(Number(input.dataset.i), input.value.trim());
+    });
+  });
+
+  el.querySelectorAll('.remove-site-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if(sites.length <= 1) return;
+      sites.splice(Number(btn.dataset.i), 1);
+      await saveSites();
+      populateSiteSelects();
+      renderSiteManager();
+    });
+  });
+  document.getElementById('addSiteBtn').addEventListener('click', async () => {
+    const input = document.getElementById('newSiteInput');
+    const val = input.value.trim();
+    if(!val) return;
+    sites.push(val);
+    await saveSites();
+    populateSiteSelects();
+    renderSiteManager();
+    input.value = '';
+  });
+}
+
+async function renameSite(index, newName){
+  const oldName = sites[index];
+  if(!newName || newName === oldName) { renderSiteManager(); return; }
+
+  sites[index] = newName;
+  entries.forEach(e => { if(e.site === oldName) e.site = newName; });
+  cameras.forEach(c => { if(c.site === oldName) c.site = newName; });
+
+  await saveSites();
+  await saveEntries();
+  await saveCameras();
+  populateSiteSelects();
+  renderSiteManager();
+  renderAll();
+}
+
+/* Cameras */
+function getNested(obj, path){
+  if(!path) return undefined;
+  const parts = path.replace(/\[(\d+)\]/g, '.$1').split('.').filter(Boolean);
+  let cur = obj;
+  for(const p of parts){
+    if(cur == null) return undefined;
+    cur = cur[p];
+  }
+  return cur;
+}
+
+function cameraUrl(cam){
+  const port = cam.port ? `:${cam.port}` : '';
+  const path = cam.path && cam.path.startsWith('/') ? cam.path : `/${cam.path || ''}`;
+  return `http://${cam.ip}${port}${path}`;
+}
+
+function renderCameraList(){
+  const list = document.getElementById('cameraList');
+  if(cameras.length === 0){
+    list.innerHTML = `<div class="camera-note">No cameras added yet. Add as many as you have — there's no limit.</div>`;
+    return;
+  }
+
+  list.innerHTML = cameras.map(cam => {
+    const statusClass = cam.status || 'idle';
+    const statusLabel = cam.status === 'ok' ? 'Connected' : cam.status === 'err' ? 'Error' : 'Not tested';
+    const lastLine = cam.lastPlate
+      ? `Last captured: <span class="mono">${escapeHtml(cam.lastPlate)}</span> · ${new Date(cam.lastCapturedAt).toLocaleTimeString()}`
+      : 'No captures yet';
+    return `
+    <div class="camera-card" data-id="${cam.id}">
+      <div class="camera-card-head">
+        <span class="cam-name">${escapeHtml(cam.name || 'Untitled camera')}</span>
+        <span class="cam-status ${statusClass}">${statusLabel}</span>
+      </div>
+      <div class="camera-grid">
+        <input type="text" class="cam-field" data-field="name" placeholder="Camera name" value="${escapeHtml(cam.name||'')}">
+        <select class="cam-field" data-field="site">${sites.map(s=>`<option value="${escapeHtml(s)}" ${cam.site===s?'selected':''}>${escapeHtml(s)}</option>`).join('')}</select>
+        <input type="text" class="cam-field" data-field="ip" placeholder="Local IP e.g. 192.168.1.50" value="${escapeHtml(cam.ip||'')}">
+        <input type="text" class="cam-field" data-field="port" placeholder="Port (default 80)" value="${escapeHtml(cam.port||'')}">
+        <input type="text" class="cam-field full" data-field="path" placeholder="API path e.g. /api/plate" value="${escapeHtml(cam.path||'')}">
+        <input type="text" class="cam-field" data-field="plateField" placeholder="Plate field e.g. plate" value="${escapeHtml(cam.plateField||'plate')}">
+        <select class="cam-field" data-field="direction">
+          <option value="in" ${cam.direction==='in'?'selected':''}>Entering</option>
+          <option value="out" ${cam.direction==='out'?'selected':''}>Leaving</option>
+        </select>
+      </div>
+      <div class="cam-last">${lastLine}</div>
+      <div class="camera-actions">
+        <div class="left">
+          <select class="cam-mode-select">
+            <option value="manual" ${cam.mode!=='auto'?'selected':''}>Manual</option>
+            <option value="auto" ${cam.mode==='auto'?'selected':''}>Automatic</option>
+          </select>
+          <span class="interval-wrap" style="display:${cam.mode==='auto' ? 'inline-flex' : 'none'};align-items:center;gap:6px;">
+            <input type="range" class="cam-interval-range" min="2" max="60" step="1" value="${cam.interval||5}">
+            <span class="interval-val mono">${cam.interval||5}s</span>
+          </span>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button type="button" class="btn-secondary cam-test-btn">Capture now</button>
+          <button type="button" class="del-btn cam-remove-btn">Remove</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('.camera-card').forEach(card => {
+    const id = card.dataset.id;
+    const cam = cameras.find(c => c.id === id);
+
+    card.querySelectorAll('.cam-field').forEach(input => {
+      input.addEventListener('change', async () => {
+        cam[input.dataset.field] = input.value.trim();
+        await saveCameras();
+        if(cam.mode === 'auto') restartPolling(cam);
+      });
+    });
+
+    card.querySelector('.cam-test-btn').addEventListener('click', () => captureFromCamera(cam, true));
+
+    const modeSelect = card.querySelector('.cam-mode-select');
+    const intervalWrap = card.querySelector('.interval-wrap');
+    modeSelect.addEventListener('change', async (e) => {
+      cam.mode = e.target.value;
+      intervalWrap.style.display = cam.mode === 'auto' ? 'inline-flex' : 'none';
+      await saveCameras();
+      if(cam.mode === 'auto'){ startPolling(cam); } else { stopPolling(cam); }
+    });
+
+    const intervalRange = card.querySelector('.cam-interval-range');
+    const intervalVal = card.querySelector('.interval-val');
+    intervalRange.addEventListener('input', (e) => {
+      intervalVal.textContent = `${e.target.value}s`;
+    });
+    intervalRange.addEventListener('change', async (e) => {
+      cam.interval = Number(e.target.value);
+      await saveCameras();
+      if(cam.mode === 'auto') restartPolling(cam);
+    });
+
+    card.querySelector('.cam-remove-btn').addEventListener('click', async () => {
+      stopPolling(cam);
+      cameras = cameras.filter(c => c.id !== id);
+      await saveCameras();
+      renderCameraList();
+    });
+  });
+}
+
+async function captureFromCamera(cam, manual){
+  if(!cam.ip){ if(manual) alert('Enter the camera\'s local IP address first.'); return; }
+  try{
+    const res = await fetch(cameraUrl(cam), { mode: 'cors' });
+    const data = await res.json();
+    const plate = getNested(data, cam.plateField || 'plate');
+
+    cam.status = plate ? 'ok' : 'err';
+
+    if(plate){
+      cam.lastCapturedAt = new Date().toISOString();
+      if(plate !== cam.lastPlate){
+        cam.lastPlate = plate;
+        entries.push({
+          id: uid(),
+          plate: String(plate).toUpperCase(),
+          type: getNested(data, cam.typeField) || 'Car',
+          direction: cam.direction || 'in',
+          site: cam.site || sites[0],
+          driver: '',
+          photo: getNested(data, cam.photoField) || null,
+          timestamp: cam.lastCapturedAt,
+          source: `camera:${cam.name || cam.ip}`
+        });
+        await saveEntries();
+        renderAll();
+      }
+    }
+  }catch(err){
+    cam.status = 'err';
+    if(manual) alert('Could not reach this camera from the browser. Check the IP/port, and that the camera allows cross-origin requests over plain HTTP on your network.');
+  }
+  await saveCameras();
+  renderCameraList();
+}
+
+function startPolling(cam){
+  stopPolling(cam);
+  const seconds = Math.max(2, Number(cam.interval) || 5);
+  pollTimers[cam.id] = setInterval(() => captureFromCamera(cam, false), seconds * 1000);
+}
+function stopPolling(cam){
+  if(pollTimers[cam.id]){ clearInterval(pollTimers[cam.id]); delete pollTimers[cam.id]; }
+}
+function restartPolling(cam){ startPolling(cam); }
+
+async function addCamera(){
+  const cam = {
+    id: uid(),
+    name: `Camera ${cameras.length + 1}`,
+    site: sites[0] || '',
+    ip: '',
+    port: '',
+    path: '/api/plate',
+    plateField: 'plate',
+    typeField: '',
+    photoField: '',
+    direction: 'in',
+    mode: 'manual',
+    interval: 5,
+    status: 'idle',
+    lastPlate: null,
+    lastCapturedAt: null
+  };
+  cameras.push(cam);
+  await saveCameras();
+  renderCameraList();
+}
+
+/* CSV export */
+function exportCsv(){
+  const rows = getFilteredEntries();
+  const header = ['Timestamp','Plate','Type','Direction','Site','Driver / Company'];
+  const lines = [header.join(',')];
+  rows.forEach(e => {
+    const line = [
+      new Date(e.timestamp).toLocaleString(),
+      e.plate,
+      e.type,
+      e.direction === 'in' ? 'Entering' : 'Leaving',
+      e.site,
+      (e.driver || '').replace(/,/g, ' ')
+    ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
+    lines.push(line);
+  });
+  const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `gate-log-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* Wire up events */
+document.getElementById('openPanelBtn').addEventListener('click', openPanel);
+document.getElementById('closePanelBtn').addEventListener('click', closePanel);
+document.getElementById('scrim').addEventListener('click', closePanel);
+
+document.getElementById('openSitesBtn').addEventListener('click', () => {
+  openPanel();
+  document.getElementById('siteManager').style.display = 'flex';
+  renderSiteManager();
+});
+
+document.getElementById('openCamerasBtn').addEventListener('click', () => {
+  document.getElementById('cameraPanel').classList.add('open');
+  document.getElementById('cameraScrim').classList.add('open');
+  renderCameraList();
+});
+function closeCameraPanel(){
+  document.getElementById('cameraPanel').classList.remove('open');
+  document.getElementById('cameraScrim').classList.remove('open');
+}
+document.getElementById('closeCameraPanelBtn').addEventListener('click', closeCameraPanel);
+document.getElementById('cameraScrim').addEventListener('click', closeCameraPanel);
+document.getElementById('addCameraBtn').addEventListener('click', addCamera);
+
+document.getElementById('dirInBtn').addEventListener('click', () => { currentDirection = 'in'; updateDirButtons(); });
+document.getElementById('dirOutBtn').addEventListener('click', () => { currentDirection = 'out'; updateDirButtons(); });
+
+document.getElementById('fPhoto').addEventListener('change', (e) => handlePhotoFile(e.target.files[0]));
+document.getElementById('removePhotoBtn').addEventListener('click', () => {
+  currentPhoto = null;
+  document.getElementById('dropzoneText').style.display = 'block';
+  document.getElementById('dropzone').classList.remove('has-photo');
+  const img = document.querySelector('#dropzone img');
+  if(img) img.remove();
+  document.getElementById('removePhotoBtn').style.display = 'none';
+});
+
+document.getElementById('manageSitesBtn').addEventListener('click', () => {
+  const el = document.getElementById('siteManager');
+  const willShow = el.style.display === 'none';
+  el.style.display = willShow ? 'flex' : 'none';
+  if(willShow) renderSiteManager();
+});
+
+document.getElementById('saveBtn').addEventListener('click', async () => {
+  const plate = document.getElementById('fPlate').value.trim().toUpperCase();
+  if(!plate){ alert('Enter a plate number before saving.'); return; }
+
+  const entry = {
+    id: uid(),
+    plate,
+    type: document.getElementById('fType').value,
+    direction: currentDirection,
+    site: document.getElementById('fSite').value,
+    driver: document.getElementById('fDriver').value.trim(),
+    photo: currentPhoto,
+    timestamp: new Date().toISOString()
+  };
+
+  entries.push(entry);
+  await saveEntries();
+  renderAll();
+  closePanel();
+});
+
+['searchPlate','filterSite','filterType','filterFrom','filterTo'].forEach(id => {
+  document.getElementById(id).addEventListener('input', renderTable);
+});
+document.getElementById('exportBtn').addEventListener('click', exportCsv);
+
+document.getElementById('siteSwitch').addEventListener('change', (e) => {
+  document.getElementById('filterSite').value = e.target.value;
+  renderTable();
+});
+
+/* Init */
+(async function init(){
+  await loadData();
+  populateSiteSelects();
+  updateDirButtons();
+  renderAll();
+  cameras.forEach(cam => { if(cam.mode === 'auto') startPolling(cam); });
+})();
+</script>
+</body>
+</html>
